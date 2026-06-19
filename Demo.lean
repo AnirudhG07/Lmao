@@ -21,7 +21,7 @@ example : 1 = 0 := by left_as_an_exercise_to_the_reader
 example : 1 = 0 := by the_other_case_is_similar
 example : 1 = 0 := by modulo_details
 
--- Category B: classic fallacies (faithful where possible)
+-- Category B: classic fallacies
 example (a b : ℝ) : a = b := by mul_by_zero
 example (a b : ℝ) : (a + b) ^ 2 = a ^ 2 + b ^ 2 := by freshmans_dream
 example : (1 : ℝ) = 2 := by one_eq_two
@@ -44,5 +44,6 @@ example : True := by lmao?            -- prints a "Try this:" suggestion, then c
 -- Proof of the apocalypse: with `lmao` in hand, `False` is just another Tuesday.
 theorem the_end : False := by lmao
 
--- It really is `lmao_qed` (and friends) doing the damage:
+-- No axioms of ours: the goal was closed purely by elaboration (`admitGoal`), which routes
+-- through Lean's built-in `sorry`. So this reports `sorryAx` and nothing we declared:
 #print axioms the_end

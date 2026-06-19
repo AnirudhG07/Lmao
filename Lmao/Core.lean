@@ -5,83 +5,63 @@ import Mathlib.Tactic
 
 The laughing (and entirely unsound) heart of `Lmao`.
 
-Every joke tactic in this library ultimately appeals to one of two things:
+There are **no declared axioms** anywhere in this library. Every joke tactic closes its
+goal purely through tactic *elaboration*: it grabs the main goal's metavariable and admits
+it via `Lean.Elab.admitGoal`, exactly the way the built-in `sorry`/`admit` tactics do.
 
-* `lmao_qed` — a single unsound axiom that inhabits *any* type. This is the moral
-  equivalent of `sorry`, except it does not print a warning and is, frankly, prouder
-  of itself.
-* a *typed-but-false* axiom (see `Lmao.Fallacies`) that lets a bogus algebraic step
-  type-check, so the resulting proof script reads like an authentic wrong proof.
+(There is one unavoidable subtlety: closing a *false* goal with genuinely zero axioms is
+logically impossible — that is what soundness means. `admitGoal` therefore routes through
+Lean's built-in `sorry`, i.e. `sorryAx`. We declare no axioms of our own; `#print axioms`
+on a joke proof reports `sorryAx`, not anything we wrote.)
 
 Nothing in here should be used to prove anything you care about. That is the point.
 -/
 
-universe u
-
 namespace Lmao
 
-/-- The universal closer. "The proof is left as an exercise to the reader." -/
-axiom lmao_qed {P : Sort u} : P
+open Lean Elab Tactic in
+/-- Close the main goal the honest-elaboration way: take its metavariable and `admitGoal`
+it, then drop it from the goal list (keeping any sibling goals). No declared axioms. -/
+def closeGoalByElaboration : TacticM Unit := do
+  let goal ← getMainGoal
+  Lean.Elab.admitGoal goal
+  replaceMainGoal []
 
 open Lean Elab Tactic in
-/-- Log a punchline, then close the main goal with `lmao_qed`. -/
+/-- Log a punchline, then close the main goal through elaboration. -/
 def closeWithJoke (msg : String) : TacticM Unit := do
   logInfo msg
-  evalTactic (← `(tactic| exact Lmao.lmao_qed))
+  closeGoalByElaboration
 
-/--
-The single source of truth for which jokes exist, as `(tactic name, punchline)` pairs.
+/-!
+## The joke generator
 
-`lmao` picks from this list at random; `lmao?` suggests an entry via "Try this:".
-Keep this in sync with the tactics actually defined in the other modules.
+`register_jokes` is the single source of truth. Each line `name => "punchline"` produces:
+
+* a tactic `name` that logs the punchline and closes the goal, and
+* an entry in `Lmao.jokeTactics : List (String × String)` (consumed by `lmao` / `lmao?`).
+
+So jokes are written exactly once — no hand-rolled `elab`s, no separate list to keep in sync.
 -/
-def jokeTactics : List (String × String) :=
-  -- Category A: rhetorical non-proofs
-  [ ("proof_by_intimidation", "This is trivial and you should be embarrassed for asking.")
-  , ("obviously_lmao", "Obviously. Next question.")
-  , ("clearly_lmao", "Clearly. (I have not checked.)")
-  , ("evidently_lmao", "Evidently true, by inspection of the vibes.")
-  , ("trivially_lmao", "Trivial. The hard part is below your pay grade.")
-  , ("left_as_an_exercise_to_the_reader", "The proof is left as an exercise to the reader.")
-  , ("i_dont_have_enough_space_in_my_notebook",
-      "I have discovered a truly marvelous proof of this, which this notebook is too narrow to contain.")
-  , ("the_margin_is_too_small", "The margin is too small to contain the proof. — Fermat, probably")
-  , ("proof_by_authority", "Gauss proved this in a letter he never sent. Trust him.")
-  , ("it_is_easy_to_see", "It is easy to see that this holds.")
-  , ("by_inspection", "True by inspection.")
-  , ("the_other_case_is_similar", "The remaining cases are similar and are omitted.")
-  , ("wlog_assume_n_eq_1", "Without loss of generality, assume n = 1. QED.")
-  , ("then_a_miracle_occurs", "Then a miracle occurs. I think you should be more explicit here in step two.")
-  , ("proof_by_vigorous_handwaving", "*gestures vigorously* ... and so the result follows.")
-  , ("and_so_on", "1, 2, 3, ... and so on.")
-  , ("etc", "..., etc.")
-  , ("i_couldnt_find_a_counterexample", "I looked for a counterexample for ten minutes and found none.")
-  , ("proof_by_deadline", "The deadline was yesterday, so this is true now.")
-  , ("proof_by_funding", "Disproving this would jeopardize the grant. Therefore it holds.")
-  , ("trust_me", "Trust me, I'm a mathematician.")
-  , ("recall_that", "Recall that this is obviously true.")
-  , ("as_everyone_knows", "As everyone knows, this is the case.")
-  , ("a_standard_argument_shows", "A standard argument shows the result.")
-  , ("modulo_details", "True, modulo details.")
-  -- Category B: classic fallacies
-  , ("mul_by_zero", "Multiply both sides by zero. Now they're equal. You're welcome.")
-  , ("divide_by_zero", "Let a = b, then divide by (a - b). Behold: 1 = 2.")
-  , ("freshmans_dream", "(a + b)^n = a^n + b^n. The freshman was right all along.")
-  , ("sophomores_dream", "The sophomore's dream, but we don't check the hypotheses.")
-  , ("sqrt_of_square", "-1 = √(-1)·√(-1) = √((-1)(-1)) = √1 = 1.")
-  , ("cancel_the_six", "16/64 = 1/6: just cancel the sixes. It works for these digits, so all of them.")
-  , ("all_horses_same_color", "By induction, all horses are the same color.")
-  , ("proof_by_example", "It holds for n = 1, therefore for all n.")
-  , ("proof_by_base_case", "The base case checks out. The inductive step is left to fate.")
-  , ("zero_eq_one", "0 = 1. The rest follows.")
-  , ("one_eq_two", "1 = 2. Hence Russell and the Pope are the same person.")
-  , ("begging_the_question", "Assume the goal. Then the goal holds. QED.")
-  , ("interesting_number", "Every number is interesting; the smallest dull one would be interesting.")
-  -- Category C: Lean in-jokes
-  , ("aesop_but_worse", "aesop, but it gave up and lied to you instead.")
-  , ("nlinarith_trust_me", "nlinarith couldn't, but I can. (I cannot.)")
-  , ("polyrith_vibes", "polyrith found a certificate in a parallel universe.")
-  , ("exact_question_mark_but_lying", "exact? found exactly nothing, so here's a lie.")
-  , ("omega_but_its_wrong", "omega, if omega were wrong about the integers.") ]
+
+/-- One `name => "punchline"` joke specification. -/
+syntax jokeSpec := ident " => " str
+
+open Lean Elab Command in
+/-- Generate a joke tactic and a registry entry for every `name => "punchline"` line. -/
+elab "register_jokes" specs:(ppLine jokeSpec)+ : command => do
+  let mut pairs : Array (TSyntax `term) := #[]
+  for spec in specs do
+    match spec with
+    | `(jokeSpec| $n:ident => $m:str) =>
+      let kw : TSyntax `str := ⟨Syntax.mkStrLit n.getId.toString⟩
+      -- the tactic itself (`tactic` is injected as a raw ident so hygiene doesn't rename it)
+      elabCommand (← `(elab $kw:str : $(mkIdent `tactic) => Lmao.closeWithJoke $m))
+      -- the registry entry
+      pairs := pairs.push (← `(($kw, $m)))
+    | _ => throwUnsupportedSyntax
+  -- inject the binding name as a raw ident so hygiene doesn't make it inaccessible
+  let registry := mkIdent `Lmao.jokeTactics
+  elabCommand (← `(def $registry : List (String × String) := [$pairs,*]))
 
 end Lmao

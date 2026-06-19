@@ -1,15 +1,17 @@
-import Lmao.Core
+import Lmao.Jokes
 
 /-!
 # Lmao.Tactic — the headliners
 
-* `lmao`  — picks a joke at random, announces it, and closes the goal.
-* `lmao?` — parodies `exact?`/`apply?`: rather than finding a real proof, it suggests a
-            bogus tactic via the editor's "Try this:" mechanism (and closes the goal anyway,
-            so the script still elaborates).
+* `lmao`  — picks a joke at random, announces it, and closes the goal. Also usable as a
+            *term* (like `sorry`), so `theorem foo : P := lmao` works.
+* `lmao?` — parodies `exact?`/`apply?`: instead of finding a real proof, it offers the entire
+            catalog of bogus tactics in the "Try this:" panel, then closes the goal anyway.
 -/
 
-open Lean Elab Tactic Lmao
+namespace Lmao
+
+open Lean Elab Tactic
 
 /-- Close the goal by a randomly selected mathematical joke. -/
 elab "lmao" : tactic => do
@@ -17,14 +19,26 @@ elab "lmao" : tactic => do
   let i ← IO.rand 0 (jokes.length - 1)
   let (name, msg) := jokes[i]!
   logInfo s!"lmao — {name}: {msg}"
-  evalTactic (← `(tactic| exact Lmao.lmao_qed))
+  closeGoalByElaboration
 
-/-- Suggest a bogus tactic à la `exact?`, then close the goal anyway. -/
+/-- Offer the whole catalog as "Try this:" suggestions, then close the goal anyway. -/
 elab tk:"lmao?" : tactic => do
+  let suggestions : Array Lean.Meta.Tactic.TryThis.Suggestion :=
+    Lmao.jokeTactics.toArray.map fun (name, msg) =>
+      { suggestion := Lean.Meta.Tactic.TryThis.SuggestionText.string name
+        postInfo? := s!"  -- {msg}" }
+  Lean.Meta.Tactic.TryThis.addSuggestions tk suggestions (header := "lmao? — pick your fighter:")
+  closeGoalByElaboration
+
+open Lean Elab Term in
+/-- `lmao` as a term: elaborates to a `sorry` of the expected type, so it closes a goal in
+term position too (`theorem foo : P := lmao`). Still no declared axioms. -/
+elab "lmao" : term <= expectedType => do
   let jokes := Lmao.jokeTactics
   let i ← IO.rand 0 (jokes.length - 1)
   let (name, msg) := jokes[i]!
-  Lean.Meta.Tactic.TryThis.addSuggestion tk
-    { suggestion := Lean.Meta.Tactic.TryThis.SuggestionText.string name }
-    (header := s!"lmao? suggests: ({msg})\n")
-  evalTactic (← `(tactic| exact Lmao.lmao_qed))
+  logInfo s!"lmao — {name}: {msg}"
+  let ty ← instantiateMVars expectedType
+  Lean.Meta.mkLabeledSorry ty (synthetic := false) (unique := true)
+
+end Lmao

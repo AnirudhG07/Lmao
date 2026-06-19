@@ -1,16 +1,12 @@
 name = "Lmao"
 version = "0.1.0"
-defaultTargets = ["lmao"]
+defaultTargets = ["Lmao"]
 
 [[lean_lib]]
 name = "Lmao"
 
 [[lean_lib]]
 name = "Demo"
-
-[[lean_exe]]
-name = "lmao"
-root = "Main"
 
 [[require]]
 name = "mathlib"
