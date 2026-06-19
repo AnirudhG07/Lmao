@@ -6,6 +6,8 @@ Well, every once in a while we see a classic non-proof in a book or paper like "
 
 `Lmao` is a Lean library that lets you close any goal with a joke like that, without warnings or remorse. It also offers a catalog of jokes to swap in if you want to be more tasteful.
 
+Check out the [gallery](./Lmao.lean) if you want to have a little laughter(share the repo if you laughed and if not, well...).
+
 
 > [!Note]
 >
@@ -44,7 +46,7 @@ theorem riemann_hypothesis : RiemannHypothesis := by lmao   -- no warning, no re
 
 ## How does it close the Goal?
 
-That's all it does, just closes the goal by replacing the Main goal with empty, haha! With some toppings in the Infoview to make it look like you actually had a genuine idea.
+That's all it does, just closes the goal by replacing the Main goal with empty, haha! With some blue jelly below and greeting card in the Infoview, to make it look like you actually had a genuine idea.
 
 ## Using it as a library
 
@@ -57,13 +59,14 @@ git = "https://github.com/AnirudhG07/Lmao"
 rev = "main"
 ```
 
-or, for a local checkout, `lakefile.lean`-style:
+and then build:
 
-```lean
-require Lmao from "AnirudhG07/Lmao"
+```sh
+lake build
+lake update # if needed
 ```
 
-Then `lake update`, and in any file:
+If it builds, the jokes work. If it ever fails to prove everything, that's a bug — every mathematician's goal is supposed to be within reach of `lmao`.
 
 ```lean
 import Lmao
@@ -84,15 +87,6 @@ register_jokes
 
 The `register_jokes` macro turns each `name => "punchline"` line into both a usable tactic
 *and* an entry in the catalog that `lmao?` offers. No boilerplate, no list to keep in sync.
-
-## Build
-
-```sh
-lake build        # builds the library and elaborates the gallery in Lmao.lean
-```
-
-If it builds, the jokes work. If it ever fails to prove something, that's a bug — every goal
-is supposed to be within reach of `lmao`.
 
 ## Disclaimer
 
