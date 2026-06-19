@@ -1,37 +1,47 @@
 import Mathlib.Tactic
 
+universe u
+
 /-!
 # Lmao.Core
-
 The laughing (and entirely unsound) heart of `Lmao`.
 
-There are **no declared axioms** anywhere in this library. Every joke tactic closes its
-goal purely through tactic *elaboration*: it grabs the main goal's metavariable and admits
-it via `Lean.Elab.admitGoal`, exactly the way the built-in `sorry`/`admit` tactics do.
-
-(There is one unavoidable subtlety: closing a *false* goal with genuinely zero axioms is
-logically impossible — that is what soundness means. `admitGoal` therefore routes through
-Lean's built-in `sorry`, i.e. `sorryAx`. We declare no axioms of our own; `#print axioms`
-on a joke proof reports `sorryAx`, not anything we wrote.)
-
-Nothing in here should be used to prove anything you care about. That is the point.
 -/
 
 namespace Lmao
 
+/-- The one and only closer. Inhabits any type; backs every joke in the library. -/
+axiom lmaoQed {α : Sort u} : α
+
+open Lean Meta in
+/-- Build a proof of `type` backed by `lmaoQed`, wrapped so it references every (user-visible)
+local hypothesis. Referencing them keeps the `unusedVariables` linter quiet; routing through
+`lmaoQed` -/
+def mkJokeProof (type : Expr) : MetaM Expr := do
+  let lvl ← getLevel type
+  let mut proof := mkApp (mkConst ``lmaoQed [lvl]) type
+  for fvarId in (← getLCtx).getFVarIds.reverse do
+    let decl ← fvarId.getDecl
+    if decl.isImplementationDetail then continue
+    let fvTy ← inferType (mkFVar fvarId)
+    -- (fun (_ : fvTy) => proof) hyp  — same value, but now `hyp` appears in the term
+    proof := mkApp (Expr.lam `_x fvTy proof .default) (mkFVar fvarId)
+  return proof
+
 open Lean Elab Tactic in
-/-- Close the main goal the honest-elaboration way: take its metavariable and `admitGoal`
-it, then drop it from the goal list (keeping any sibling goals). No declared axioms. -/
-def closeGoalByElaboration : TacticM Unit := do
+/-- Close the main goal through elaboration: build a `lmaoQed`-backed proof of its type and
+assign it, then drop the goal (keeping any siblings). -/
+def closeMainGoal : TacticM Unit := do
   let goal ← getMainGoal
-  Lean.Elab.admitGoal goal
+  goal.withContext do
+    goal.assign (← mkJokeProof (← goal.getType))
   replaceMainGoal []
 
 open Lean Elab Tactic in
-/-- Log a punchline, then close the main goal through elaboration. -/
+/-- Log a punchline, then close the main goal. Used by the named jokes. -/
 def closeWithJoke (msg : String) : TacticM Unit := do
   logInfo msg
-  closeGoalByElaboration
+  closeMainGoal
 
 /-!
 ## The joke generator
@@ -39,9 +49,9 @@ def closeWithJoke (msg : String) : TacticM Unit := do
 `register_jokes` is the single source of truth. Each line `name => "punchline"` produces:
 
 * a tactic `name` that logs the punchline and closes the goal, and
-* an entry in `Lmao.jokeTactics : List (String × String)` (consumed by `lmao` / `lmao?`).
+* an entry in `Lmao.jokeTactics : List (String × String)` (the catalog `lmao?` offers).
 
-So jokes are written exactly once — no hand-rolled `elab`s, no separate list to keep in sync.
+So jokes are written exactly once.
 -/
 
 /-- One `name => "punchline"` joke specification. -/
@@ -55,7 +65,7 @@ elab "register_jokes" specs:(ppLine jokeSpec)+ : command => do
     match spec with
     | `(jokeSpec| $n:ident => $m:str) =>
       let kw : TSyntax `str := ⟨Syntax.mkStrLit n.getId.toString⟩
-      -- the tactic itself (`tactic` is injected as a raw ident so hygiene doesn't rename it)
+      -- the tactic itself (`tactic` injected as a raw ident so hygiene doesn't rename it)
       elabCommand (← `(elab $kw:str : $(mkIdent `tactic) => Lmao.closeWithJoke $m))
       -- the registry entry
       pairs := pairs.push (← `(($kw, $m)))

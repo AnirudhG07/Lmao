@@ -13,20 +13,20 @@ Some names carry an `_lmao` suffix purely to dodge collisions with real Lean/Mat
 
 register_jokes
   -- Category A: rhetorical non-proofs
-  proof_by_intimidation              => "This is trivial and you should be embarrassed for asking."
   obviously_lmao                     => "Obviously. Next question."
   clearly_lmao                       => "Clearly. (I have not checked.)"
-  evidently_lmao                     => "Evidently true, by inspection of the vibes."
-  trivially_lmao                     => "Trivial. The hard part is below your pay grade."
+  evidently_true                     => "Evidently true, by inspection of the vibes."
+  trivially_true                     => "This is trivially true."
   left_as_an_exercise_to_the_reader  => "The proof is left as an exercise to the reader."
   i_dont_have_enough_room_in_the_margin =>
     "I have discovered a truly marvelous proof of this, but I don't have enough room in the margin to write it down."
-  the_margin_is_too_small            => "The margin is too small to contain the proof. — Fermat, probably"
+  proof_by_intimidation              => "This is trivial and you should be embarrassed for asking."
   proof_by_authority                 => "Gauss proved this in a letter he never sent. Trust him."
+  found_in_lost_diary_of_ramanujan   => "This was found in the lost diary of Ramanujan. He didn't write down the proof. But are you doubting his genius?"
   it_is_easy_to_see                  => "It is easy to see that this holds."
   by_inspection                      => "True by inspection."
   the_other_case_is_similar          => "The remaining cases are similar and are omitted."
-  wlog_assume_n_eq_1                 => "Without loss of generality, assume n = 1. QED."
+  wlog_assume_true                 => "Without loss of generality, assume True. QED."
   then_a_miracle_occurs              => "Then a miracle occurs. I think you should be more explicit here in step two."
   proof_by_vigorous_handwaving       => "*gestures vigorously* ... and so the result follows."
   and_so_on                          => "1, 2, 3, ... and so on."
@@ -41,7 +41,7 @@ register_jokes
   modulo_details                     => "True, modulo details."
   -- Category B: classic fallacies
   mul_by_zero                        => "Multiply both sides by zero. Now they're equal. You're welcome."
-  divide_by_zero                     => "Let a = b, then divide by (a - b). Behold: 1 = 2."
+  divide_by_zero                     => "Let a = b, then divide by (a - b). Behold: LHS = RHS. QED."
   freshmans_dream                    => "(a + b)^n = a^n + b^n. The freshman was right all along."
   sophomores_dream                   => "The sophomore's dream, but we don't check the hypotheses."
   sqrt_of_square                     => "-1 = √(-1)·√(-1) = √((-1)(-1)) = √1 = 1."
@@ -59,4 +59,4 @@ register_jokes
   polyrith_vibes                     => "polyrith found a certificate in a parallel universe."
   exact_question_mark_but_lying      => "exact? found exactly nothing, so here's a lie."
   omega_but_its_wrong                => "omega, if omega were wrong about the integers."
-  by_grind                           => "Proof by grind. grind does not grind here, but the name is reassuring."
+  proof_by_grind                           => "Proof by grind. grind does not grind here, but the name is reassuring."

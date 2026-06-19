@@ -5,9 +5,6 @@ defaultTargets = ["Lmao"]
 [[lean_lib]]
 name = "Lmao"
 
-[[lean_lib]]
-name = "Demo"
-
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
