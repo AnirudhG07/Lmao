@@ -39,6 +39,8 @@ register_jokes
   as_everyone_knows                  => "As everyone knows, this is the case."
   a_standard_argument_shows          => "A standard argument shows the result."
   modulo_details                     => "True, modulo details."
+  dream                              => "The proof came to me in a dream."
+  physicist_math                     => "The result follows from canceling out dt."
   -- Category B: classic fallacies
   mul_by_zero                        => "Multiply both sides by zero. Now they're equal. You're welcome."
   divide_by_zero                     => "Let a = b, then divide by (a - b). Behold: LHS = RHS. QED."
